@@ -18,6 +18,7 @@ val LightBlue = Color(0xFF9AD9FF)
 // Background
 val SecundarioDark = Color(0xFF311469)
 val HomeBackground = Color(0xFFF5F5F5)
+val HomeBackground2 = Color(0xFF043F70)
 
 // Button, Icon
 val NeutralLight = Color(0xFFEFF0F0)

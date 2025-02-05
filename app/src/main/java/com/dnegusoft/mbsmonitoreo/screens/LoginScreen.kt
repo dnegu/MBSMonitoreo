@@ -29,15 +29,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dnegusoft.mbsmonitoreo.R
 import com.dnegusoft.mbsmonitoreo.components.MBSActionButton
 import com.dnegusoft.mbsmonitoreo.model.LoginAction
 import com.dnegusoft.mbsmonitoreo.model.LoginState
+import com.dnegusoft.mbsmonitoreo.ui.theme.HomeBackground2
 import com.dnegusoft.mbsmonitoreo.ui.theme.NeutralMedium
 import com.dnegusoft.mbsmonitoreo.ui.theme.PrimarioMedium
-import com.dnegusoft.mbsmonitoreo.ui.theme.SecundarioDark
 import com.dnegusoft.mbsmonitoreo.viewmodel.LoginViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -73,14 +74,14 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .weight(0.4f)
                 .clip(RoundedCornerShape(bottomEnd = 15.dp, bottomStart = 15.dp))
-                .background(SecundarioDark),
+                .background(HomeBackground2),
             contentAlignment = Alignment.Center
         ) {
             Column(
                 modifier = Modifier.padding(horizontal = 48.dp)
             ) {
                 Image(
-                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                    painter = painterResource(R.drawable.ic_logo_mbs),
                     contentDescription = null,
                     contentScale = ContentScale.FillWidth,
                     modifier = Modifier.width(200.dp).align(Alignment.CenterHorizontally)
@@ -164,4 +165,12 @@ fun LoginScreen(
         }
     }
 
+}
+
+@Preview
+@Composable
+fun LoginScreenPreview() {
+    LoginScreen(
+        state = LoginState(),
+        onAction = {})
 }
