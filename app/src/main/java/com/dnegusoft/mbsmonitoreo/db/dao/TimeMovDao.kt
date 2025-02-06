@@ -14,6 +14,9 @@ interface TimeMovDao {
     @Query("SELECT * FROM time_movement WHERE fecha = :date ORDER BY id DESC")
     suspend fun getAllMovement(date: String): List<TimeMovEntity>
 
+    @Query("SELECT * FROM time_movement WHERE status = 'P' ORDER BY id DESC")
+    suspend fun getAllMovementPending(): List<TimeMovEntity>
+
     @Query("UPDAte  time_movement SET status = 'F' WHERE id = :id")
     suspend fun UpdateTimeMov(id: Long)
 }

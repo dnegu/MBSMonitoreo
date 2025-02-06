@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -53,6 +55,7 @@ import org.koin.androidx.compose.koinViewModel
 fun MainScreenRoot(
     onBack: () -> Unit,
     viewModel: HomeViewModel = koinViewModel(),
+    onHistory: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var activities by remember { mutableStateOf(listOf<String>()) }
@@ -103,6 +106,9 @@ fun MainScreenRoot(
                     HomeAction.OnBack -> {
                         onBack()
                     }
+                    HomeAction.OnHistory -> {
+                        onHistory()
+                    }
                     else -> Unit
                 }
                 viewModel.onAction(action)
@@ -121,7 +127,7 @@ fun MainScreenRoot(
 }
 
 @Composable
-fun IndeterminateLinearLoader() {
+fun IndeterminateLinearLoader(text: String = "Cargando...") {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -134,7 +140,7 @@ fun IndeterminateLinearLoader() {
         ) {
             Column {
                 CircularProgressIndicator(modifier = Modifier.padding(24.dp), strokeCap = StrokeCap.Round)
-                Text("Cargando...", modifier = Modifier.padding(16.dp,8.dp))
+                Text(text, modifier = Modifier.padding(16.dp,8.dp))
             }
         }
     }
@@ -163,11 +169,17 @@ fun MainScreen(
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+            .fillMaxSize(),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        WCTopBarWithMenuIcon(
+            title = "Home",
+            onMenuClick = {
+
+            },
+            icon = Icons.Default.Place
+        )
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(uiState.currentTime, style = MaterialTheme.typography.headlineMedium)
@@ -265,6 +277,7 @@ fun MainScreen(
                         .align(Alignment.CenterHorizontally)
                         .fillMaxWidth()
                         .height(260.dp)
+                        .padding(16.dp)
                 ) {
                     Text(
                         if (it == ActivityState.INICIO) "Inicio de actividad" else "Fin de actividad",
@@ -274,6 +287,29 @@ fun MainScreen(
                     )
                 }
             }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Button(
+            onClick = { onAction(HomeAction.OnHistory) },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            ),
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .fillMaxWidth()
+                .height(60.dp)
+                .padding(16.dp,0.dp)
+        ) {
+            Text(
+                text = "Ver historial",
+                modifier = Modifier.padding(8.dp),
+                style = TextStyle(fontSize = 16.sp, color = Color.White),
+                textAlign = TextAlign.Center
+            )
+        }
+
+        Spacer(modifier = Modifier.height(60.dp))
 
         // Dialogo de confirmación de máquina
         if (showDialog) {

@@ -13,27 +13,31 @@ import retrofit2.Response
 import java.io.IOException
 import java.net.SocketTimeoutException
 
-suspend fun <T> safeCall(
+fun <T> safeCall(
     apiCall: suspend () -> Response<T>
 ): Flow<DataState<T>> {
     return flow {
-        val response = apiCall()
-        if (response.isSuccessful) {
-            response.body()?.let {
-                emit(DataState.Success(it))
-            } ?: emit(DataState.Error("Empty response body"))
-        } else {
-            emit(DataState.Error(response.message()))
+        try {
+            val response = apiCall()
+            if (response.isSuccessful) {
+                response.body()?.let {
+                    emit(DataState.Success(it))
+                } ?: emit(DataState.Error("Empty response body"))
+            } else {
+                emit(DataState.Error(response.message()))
+            }
+        } catch (e: Exception) {
+            exceptionHandler(e)
         }
     }.flowOn(Dispatchers.IO)
 }
 
 fun exceptionHandler(throwable: Throwable): DataState.Error {
     return when (throwable) {
-        is SocketTimeoutException -> return  DataState.Error("Request timed out, please try again.")
-        is IOException -> return DataState.Error("Network error, please check your connection.")
-        is HttpException ->return DataState.Error("Server error: ${throwable.message}")
-        else -> return DataState.Error("An unexpected error occurred: ${throwable.message}")
+        is SocketTimeoutException -> DataState.Error("Request timed out, please try again.")
+        is IOException -> DataState.Error("Network error, please check your connection.")
+        is HttpException -> DataState.Error("Server error: ${throwable.message}")
+        else -> DataState.Error("An unexpected error occurred: ${throwable.message}")
     }
 }
 

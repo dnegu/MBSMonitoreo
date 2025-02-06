@@ -58,6 +58,34 @@ class HomeViewModel(
 
     var loading by mutableStateOf(false)
 
+    private val _loadingSending = MutableStateFlow(false)
+    val loadingSending = _loadingSending.asStateFlow()
+
+    private val _movements = MutableStateFlow(listOf<TimeMovEntity>())
+    val movements = _movements.asStateFlow()
+
+    fun getMovements() {
+        viewModelScope.launch {
+            val (date, _) = getCurrentDateAndTime()
+            val listMovements = timeMovDao.getAllMovement(date)
+            _movements.value = listMovements
+        }
+    }
+
+    fun sendMovementsPending(){
+        viewModelScope.launch {
+            _loadingSending.value = true
+            val listMovements = timeMovDao.getAllMovementPending()
+            listMovements.forEach {
+                apiCall( { apiRepository.postMovement(it) }, _response)
+                delay(1500L)
+            }
+            _movements.value = listOf()
+            _loadingSending.value = false
+            getMovements()
+        }
+    }
+
     fun fetchData() {
         apiCall( { apiRepository.getActividades() }, _activities)
         apiCall( { apiRepository.getMaquinaria() }, _machines)
