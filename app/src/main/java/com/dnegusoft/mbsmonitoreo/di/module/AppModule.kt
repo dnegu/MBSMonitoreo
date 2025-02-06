@@ -39,5 +39,5 @@ val appModule = module {
 
     //ViewModels
     viewModel { LoginViewModel(get(),get()) }
-    viewModel { HomeViewModel(get(),get(),get(),get()) }
+    viewModel { HomeViewModel(get(),get(),get(),get(),get()) }
 }

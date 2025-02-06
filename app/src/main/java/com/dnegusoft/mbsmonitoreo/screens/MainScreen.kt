@@ -58,6 +58,7 @@ fun MainScreenRoot(
     onHistory: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val userName by viewModel.userName.collectAsState()
     var activities by remember { mutableStateOf(listOf<String>()) }
     var machines by remember { mutableStateOf(listOf<String>()) }
 
@@ -87,6 +88,7 @@ fun MainScreenRoot(
     if(viewModel.gettingData){
         LaunchedEffect(Unit) {
             viewModel.startClock()
+            viewModel.getName()
 
             if(!viewModel.chargeAll && NetworkUtils.isInternetAvailable(context))
                 viewModel.fetchData()
@@ -100,6 +102,7 @@ fun MainScreenRoot(
     else{
         MainScreen(
             uiState = uiState,
+            userName = userName,
             state = viewModel.state,
             onAction = { action ->
                 when (action) {
@@ -150,6 +153,7 @@ fun IndeterminateLinearLoader(text: String = "Cargando...") {
 @Composable
 fun MainScreen(
     state: HomeState,
+    userName: String,
     onAction: (HomeAction) -> Unit,
     uiState: UiState,
     toggleDropdown: () -> Unit,
@@ -180,6 +184,9 @@ fun MainScreen(
             },
             icon = Icons.Default.Place
         )
+
+        Text(text = "Bienvenid@ $userName", style = MaterialTheme.typography.headlineMedium)
+
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(uiState.currentTime, style = MaterialTheme.typography.headlineMedium)
@@ -401,6 +408,7 @@ fun MainScreenPreview() {
         ) {
             MainScreen(
                 state = HomeState(),
+                userName = "David",
                 onAction = {},
                 uiState = UiState(
                     currentTime = "11:58:00",

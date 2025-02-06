@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dnegusoft.mbsmonitoreo.constants.DataStoreConstants
 import com.dnegusoft.mbsmonitoreo.db.dao.ActividadDao
 import com.dnegusoft.mbsmonitoreo.db.dao.MaquinariaDao
 import com.dnegusoft.mbsmonitoreo.db.dao.TimeMovDao
@@ -13,6 +14,7 @@ import com.dnegusoft.mbsmonitoreo.db.entity.ActividadEntity
 import com.dnegusoft.mbsmonitoreo.db.entity.MaquinariaEntity
 import com.dnegusoft.mbsmonitoreo.db.entity.TimeMovEntity
 import com.dnegusoft.mbsmonitoreo.di.api.DataState
+import com.dnegusoft.mbsmonitoreo.di.module.PreferencesDataStore
 import com.dnegusoft.mbsmonitoreo.model.ApiResponse
 import com.dnegusoft.mbsmonitoreo.model.HomeAction
 import com.dnegusoft.mbsmonitoreo.model.HomeState
@@ -30,19 +32,22 @@ class HomeViewModel(
     private val timeMovDao: TimeMovDao,
     private val maquinariaDao: MaquinariaDao,
     private val actividadDao: ActividadDao,
-    private val apiRepository: ApiRepository
+    private val apiRepository: ApiRepository,
+    private val dataStore: PreferencesDataStore
 ) : ViewModel() {
 
     init {
         viewModelScope.launch {
             chargeAll = maquinariaDao.getAllMaquinaria().isNotEmpty() && actividadDao.getAllActividad().isNotEmpty()
-
             gettingData = true
         }
     }
 
     var gettingData by mutableStateOf(false)
     var chargeAll by mutableStateOf(false)
+
+    private val _userName = MutableStateFlow("User")
+    val userName = _userName.asStateFlow()
 
     var state by mutableStateOf(HomeState())
         private set
@@ -63,6 +68,13 @@ class HomeViewModel(
 
     private val _movements = MutableStateFlow(listOf<TimeMovEntity>())
     val movements = _movements.asStateFlow()
+
+    fun getName(){
+        viewModelScope.launch {
+            val name = dataStore.getFirstPreference(DataStoreConstants.NAME,"User")
+            _userName.value = name
+        }
+    }
 
     fun getMovements() {
         viewModelScope.launch {
@@ -197,7 +209,7 @@ class HomeViewModel(
                 maquina = machine,
                 tipo = state.name,
                 actividad = activity,
-                personId = ""
+                personId = dataStore.getFirstPreference(DataStoreConstants.ID,"")
             )
 
             val idInsert = timeMovDao.insertTimeMov(timeMovEntity)
