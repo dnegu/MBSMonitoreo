@@ -6,10 +6,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dnegusoft.mbsmonitoreo.db.dao.ActividadDao
+import com.dnegusoft.mbsmonitoreo.db.dao.MaquinariaDao
 import com.dnegusoft.mbsmonitoreo.db.dao.TimeMovDao
+import com.dnegusoft.mbsmonitoreo.db.entity.ActividadEntity
+import com.dnegusoft.mbsmonitoreo.db.entity.MaquinariaEntity
 import com.dnegusoft.mbsmonitoreo.db.entity.TimeMovEntity
+import com.dnegusoft.mbsmonitoreo.di.api.DataState
+import com.dnegusoft.mbsmonitoreo.model.ApiResponse
 import com.dnegusoft.mbsmonitoreo.model.HomeAction
 import com.dnegusoft.mbsmonitoreo.model.HomeState
+import com.dnegusoft.mbsmonitoreo.repository.ApiRepository
+import com.dnegusoft.mbsmonitoreo.utils.apiCall
+import com.dnegusoft.mbsmonitoreo.utils.liveData
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,12 +27,48 @@ import java.util.Date
 import java.util.Locale
 
 class HomeViewModel(
-    private val timeMovDao: TimeMovDao
+    private val timeMovDao: TimeMovDao,
+    private val maquinariaDao: MaquinariaDao,
+    private val actividadDao: ActividadDao,
+    private val apiRepository: ApiRepository
 ) : ViewModel() {
+
+    init {
+        viewModelScope.launch {
+            chargeAll = maquinariaDao.getAllMaquinaria().isNotEmpty() && actividadDao.getAllActividad().isNotEmpty()
+
+            gettingData = true
+        }
+    }
+
+    var gettingData by mutableStateOf(false)
+    var chargeAll by mutableStateOf(false)
 
     var state by mutableStateOf(HomeState())
         private set
 
+    private val _activities = liveData<List<ActividadEntity>>()
+    val activities get() = _activities
+
+    private val _machines = liveData<List<MaquinariaEntity>>()
+    val machines get() = _machines
+
+    private val _response = liveData<ApiResponse>()
+    val response get() = _response
+
+    var loading by mutableStateOf(false)
+
+    fun fetchData() {
+        apiCall( { apiRepository.getActividades() }, _activities)
+        apiCall( { apiRepository.getMaquinaria() }, _machines)
+    }
+
+    fun fetchDataOffline() {
+        viewModelScope.launch {
+            _activities.postValue(DataState.Success(actividadDao.getAllActividad()))
+            _machines.postValue(DataState.Success(maquinariaDao.getAllMaquinaria()))
+        }
+    }
 
     fun onAction(action: HomeAction) {
         state = when(action){
@@ -36,10 +81,6 @@ class HomeViewModel(
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState = _uiState.asStateFlow()
-
-    val machines = listOf("Cargador frontal 1", "Cargador frontal 2", "Cargador frontal 3", "Montacarga 1")
-
-    val activities = listOf("Tiempo muerto", "Carga de material", "Descarga de material", "Tiempo de espera")
 
     fun startClock() {
         viewModelScope.launch {
@@ -110,7 +151,7 @@ class HomeViewModel(
         val currentDateTime = Date()
 
         // Date format: DD/MM/YYYY
-        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val formattedDate = dateFormat.format(currentDateTime)
 
         // Time format: HH:mm:ss
@@ -122,19 +163,52 @@ class HomeViewModel(
 
     private fun saveMovement(date: String,hour: String ,machine: String, state: ActivityState, activity: String) {
         viewModelScope.launch {
-            timeMovDao.insertTimeMov(
-                TimeMovEntity(
-                    fecha = date,
-                    hora = hour,
-                    maquina = machine,
-                    tipo = state.name,
-                    actividad = activity
-                )
+            val timeMovEntity = TimeMovEntity(
+                fecha = date,
+                hora = hour,
+                maquina = machine,
+                tipo = state.name,
+                actividad = activity,
+                personId = ""
             )
+
+            val idInsert = timeMovDao.insertTimeMov(timeMovEntity)
+            try {
+                apiCall( { apiRepository.postMovement(timeMovEntity.apply { id = idInsert }) }, _response)
+            } catch (e: Exception){
+                println("Error al guardar movimiento en Server -> $e")
+            }
         }
 
         println("Guardando movimiento -> Fecha: $date Hora: $hour , Máquina: $machine, Estado: $state")
     }
+
+    fun updateState(id: Long){
+        viewModelScope.launch {
+            timeMovDao.UpdateTimeMov(id)
+        }
+    }
+
+    fun insertAllActivities(list: List<ActividadEntity>) {
+        if(list.isNotEmpty())
+            viewModelScope.launch {
+                actividadDao.deleteAllActividades()
+                list.forEach { activity ->
+                    actividadDao.insertActividad(activity)
+                }
+            }
+    }
+
+    fun insertAllMaquinaria(list: List<MaquinariaEntity>) {
+        if(list.isNotEmpty())
+            viewModelScope.launch {
+                maquinariaDao.deleteAllMaquinaria()
+                list.forEach { maquinaria ->
+                    maquinariaDao.insertMaquinaria(maquinaria)
+                }
+            }
+    }
+
 }
 
 

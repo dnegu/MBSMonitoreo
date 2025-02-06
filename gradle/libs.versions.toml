@@ -1,5 +1,6 @@
 [versions]
 agp = "8.7.3"
+datastorePreferences = "1.1.2"
 kotlin = "2.0.20"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -9,7 +10,7 @@ lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.10.0"
 composeBom = "2025.01.01"
 navigationCompose = "2.8.6"
-koinBom = "4.0.2"
+koinBom = "4.0.1-Beta1"
 retrofit = "2.11.0"
 ksp = "2.0.20-1.0.24"
 loggingInterceptor = "4.12.0"
@@ -19,6 +20,7 @@ roomRuntime = "2.6.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomRuntime" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }

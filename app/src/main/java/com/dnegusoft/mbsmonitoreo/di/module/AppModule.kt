@@ -1,13 +1,15 @@
 package com.dnegusoft.mbsmonitoreo.di.module
 
+import android.content.Context
 import androidx.room.Room
 import com.dnegusoft.mbsmonitoreo.db.AppDataBase
 import com.dnegusoft.mbsmonitoreo.repository.ApiRepository
-import com.dnegusoft.mbsmonitoreo.viewmodel.ApiViewModel
 import com.dnegusoft.mbsmonitoreo.viewmodel.HomeViewModel
 import com.dnegusoft.mbsmonitoreo.viewmodel.LoginViewModel
 import org.koin.android.ext.koin.androidApplication
+import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val appModule = module {
@@ -25,9 +27,17 @@ val appModule = module {
 
     //Dao
     single { get<AppDataBase>().timeMovDao() }
+    single { get<AppDataBase>().maquinariaDao() }
+    single { get<AppDataBase>().actividadDao() }
+
+    //DataSore
+    single {
+        createDataStore { (get() as Context).filesDir.resolve(dataStoreFileName).absolutePath }
+    }
+
+    singleOf(::PreferencesDataStoreImpl).bind<PreferencesDataStore>()
 
     //ViewModels
-    viewModel { ApiViewModel(get()) }
-    viewModel { LoginViewModel() }
-    viewModel { HomeViewModel(get()) }
+    viewModel { LoginViewModel(get(),get()) }
+    viewModel { HomeViewModel(get(),get(),get(),get()) }
 }

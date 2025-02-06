@@ -1,7 +1,10 @@
 package com.dnegusoft.mbsmonitoreo.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -37,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dnegusoft.mbsmonitoreo.model.HomeAction
 import com.dnegusoft.mbsmonitoreo.model.HomeState
+import com.dnegusoft.mbsmonitoreo.utils.NetworkUtils
 import com.dnegusoft.mbsmonitoreo.viewmodel.ActivityState
 import com.dnegusoft.mbsmonitoreo.viewmodel.HomeViewModel
 import com.dnegusoft.mbsmonitoreo.viewmodel.UiState
@@ -48,33 +55,89 @@ fun MainScreenRoot(
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var activities by remember { mutableStateOf(listOf<String>()) }
+    var machines by remember { mutableStateOf(listOf<String>()) }
 
-    LaunchedEffect(Unit) {
-        viewModel.startClock()
+    viewModel.activities.Observe { acts ->
+        activities = acts.map { it.nombre }
+        if(viewModel.loading ) viewModel.insertAllActivities(acts)
+        if(activities.isNotEmpty() && machines.isNotEmpty())
+            viewModel.loading = false
     }
 
-    MainScreen(
-        uiState = uiState,
-        state = viewModel.state,
-        onAction = { action ->
-            when (action) {
-                HomeAction.OnBack -> {
-                    onBack()
-                }
-                else -> Unit
+    viewModel.machines.Observe { maq ->
+        machines = maq.map { it.nombre }
+        if(viewModel.loading ) viewModel.insertAllMaquinaria(maq)
+        if(activities.isNotEmpty() && machines.isNotEmpty())
+            viewModel.loading = false
+    }
+
+    viewModel.response.Observe { response ->
+        response.id.let {
+            if (it != null && it != 0L) {
+                viewModel.updateState(it)
             }
-            viewModel.onAction(action)
-        },
-        toggleDropdown = viewModel::toggleDropdown,
-        toggleActivityDropdown = viewModel::toggleDropdownActivity,
-        machines = viewModel.machines,
-        selectMachine = viewModel::selectMachine,
-        selectActivity = viewModel::selectActivity,
-        confirmMachineSelection = viewModel::confirmMachineSelection,
-        confirmActivitySelection = viewModel::confirmActivitySelection,
-        toggleActivity = viewModel::toggleActivity,
-        activities = viewModel.activities
-    )
+        }
+    }
+    val context = LocalContext.current
+
+    if(viewModel.gettingData){
+        LaunchedEffect(Unit) {
+            viewModel.startClock()
+
+            if(!viewModel.chargeAll && NetworkUtils.isInternetAvailable(context))
+                viewModel.fetchData()
+            else
+                viewModel.fetchDataOffline()
+        }
+    }
+
+    if (viewModel.loading)
+        IndeterminateLinearLoader()
+    else{
+        MainScreen(
+            uiState = uiState,
+            state = viewModel.state,
+            onAction = { action ->
+                when (action) {
+                    HomeAction.OnBack -> {
+                        onBack()
+                    }
+                    else -> Unit
+                }
+                viewModel.onAction(action)
+            },
+            toggleDropdown = viewModel::toggleDropdown,
+            toggleActivityDropdown = viewModel::toggleDropdownActivity,
+            machines = machines,
+            selectMachine = viewModel::selectMachine,
+            selectActivity = viewModel::selectActivity,
+            confirmMachineSelection = viewModel::confirmMachineSelection,
+            confirmActivitySelection = viewModel::confirmActivitySelection,
+            toggleActivity = viewModel::toggleActivity,
+            activities = activities
+        )
+    }
+}
+
+@Composable
+fun IndeterminateLinearLoader() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) { detectTapGestures { } }
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = .4f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(modifier = Modifier
+            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+        ) {
+            Column {
+                CircularProgressIndicator(modifier = Modifier.padding(24.dp), strokeCap = StrokeCap.Round)
+                Text("Cargando...", modifier = Modifier.padding(16.dp,8.dp))
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,7 +162,9 @@ fun MainScreen(
     var showError by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -196,7 +261,10 @@ fun MainScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (it == ActivityState.INICIO) Color.Green else Color.Red
                     ),
-                    modifier = Modifier.align(Alignment.CenterHorizontally).fillMaxWidth().height(260.dp)
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .fillMaxWidth()
+                        .height(260.dp)
                 ) {
                     Text(
                         if (it == ActivityState.INICIO) "Inicio de actividad" else "Fin de actividad",

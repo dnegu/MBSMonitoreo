@@ -1,5 +1,6 @@
 package com.dnegusoft.mbsmonitoreo.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -18,11 +19,16 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,18 +53,38 @@ fun LoginScreenRoot(
     onLoginSuccess: () -> Unit,
     viewModel: LoginViewModel = koinViewModel(),
 ) {
+    var showError by remember { mutableStateOf(false) }
+
+    viewModel.login.Observe { response ->
+        if(response.isSuccess == true){
+            viewModel.saveData(viewModel.state.user,response.data?:"")
+            onLoginSuccess()
+        } else {
+            viewModel.onAction(LoginAction.OnLoginResponse)
+            showError = true
+        }
+    }
+
+    if(viewModel.isLoginAfter)
+        onLoginSuccess()
+
     LoginScreen(
         state = viewModel.state,
         onAction = { action ->
             when (action) {
                 LoginAction.OnLoginClick -> {
-                    onLoginSuccess()
+                    viewModel.loginClick()
                 }
                 else -> Unit
             }
             viewModel.onAction(action)
         }
     )
+
+    if(showError){
+        Toast.makeText(LocalContext.current, "No se puedo iniciar sesión, revise sus datos o su conexión a internet.", Toast.LENGTH_SHORT).show()
+        showError = false
+    }
 }
 
 @Composable

@@ -9,8 +9,11 @@ import com.dnegusoft.mbsmonitoreo.db.entity.TimeMovEntity
 @Dao
 interface TimeMovDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTimeMov(timeMov: TimeMovEntity)
+    suspend fun insertTimeMov(timeMov: TimeMovEntity) : Long
 
-    @Query("SELECT * FROM time_movement ORDER BY id DESC")
-    suspend fun getAllFacts(): List<TimeMovEntity>
+    @Query("SELECT * FROM time_movement WHERE fecha = :date ORDER BY id DESC")
+    suspend fun getAllMovement(date: String): List<TimeMovEntity>
+
+    @Query("UPDAte  time_movement SET status = 'F' WHERE id = :id")
+    suspend fun UpdateTimeMov(id: Long)
 }
